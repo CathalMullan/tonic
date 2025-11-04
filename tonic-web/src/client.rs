@@ -1,6 +1,6 @@
 use http::header::CONTENT_TYPE;
 use http::{Request, Response, Version};
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
@@ -78,12 +78,13 @@ where
     }
 }
 
-/// Response future for the [`GrpcWebService`](crate::GrpcWebService).
-#[pin_project]
-#[must_use = "futures do nothing unless polled"]
-pub struct ResponseFuture<F> {
-    #[pin]
-    inner: F,
+pin_project! {
+    /// Response future for the [`GrpcWebService`](crate::GrpcWebService).
+    #[must_use = "futures do nothing unless polled"]
+    pub struct ResponseFuture<F> {
+        #[pin]
+        inner: F,
+    }
 }
 
 impl<F, B, E> Future for ResponseFuture<F>

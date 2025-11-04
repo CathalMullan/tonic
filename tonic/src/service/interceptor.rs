@@ -3,7 +3,7 @@
 //! See [`Interceptor`] for more details.
 
 use crate::{request::SanitizeHeaders, Status};
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use std::{
     fmt,
     future::Future,
@@ -161,33 +161,43 @@ where
     const NAME: &'static str = S::NAME;
 }
 
-/// Response future for [`InterceptedService`].
-#[pin_project]
-#[derive(Debug)]
-pub struct ResponseFuture<F> {
-    #[pin]
-    kind: Kind<F>,
+pin_project! {
+    /// Response future for [`InterceptedService`].
+    #[derive(Debug)]
+    pub struct ResponseFuture<F> {
+        #[pin]
+        kind: Kind<F>,
+    }
 }
 
 impl<F> ResponseFuture<F> {
     fn future(future: F) -> Self {
         Self {
-            kind: Kind::Future(future),
+            kind: Kind::Future { future },
         }
     }
 
     fn status(status: Status) -> Self {
         Self {
-            kind: Kind::Status(Some(status)),
+            kind: Kind::Status {
+                status: Some(status),
+            },
         }
     }
 }
 
-#[pin_project(project = KindProj)]
-#[derive(Debug)]
-enum Kind<F> {
-    Future(#[pin] F),
-    Status(Option<Status>),
+pin_project! {
+    #[project = KindProj]
+    #[derive(Debug)]
+    enum Kind<F> {
+        Future {
+            #[pin]
+            future: F
+        },
+        Status {
+            status: Option<Status>
+        },
+    }
 }
 
 impl<F, E, B> Future for ResponseFuture<F>
@@ -198,8 +208,10 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.project().kind.project() {
-            KindProj::Future(future) => future.poll(cx).map_ok(|res| res.map(ResponseBody::wrap)),
-            KindProj::Status(status) => {
+            KindProj::Future { future } => {
+                future.poll(cx).map_ok(|res| res.map(ResponseBody::wrap))
+            }
+            KindProj::Status { status } => {
                 let (parts, ()) = status.take().unwrap().into_http::<()>().into_parts();
                 let response = http::Response::from_parts(parts, ResponseBody::<B>::empty());
                 Poll::Ready(Ok(response))
@@ -208,19 +220,25 @@ where
     }
 }
 
-/// Response body for [`InterceptedService`].
-#[pin_project]
-#[derive(Debug)]
-pub struct ResponseBody<B> {
-    #[pin]
-    kind: ResponseBodyKind<B>,
+pin_project! {
+    /// Response body for [`InterceptedService`].
+    #[derive(Debug)]
+    pub struct ResponseBody<B> {
+        #[pin]
+        kind: ResponseBodyKind<B>,
+    }
 }
 
-#[pin_project(project = ResponseBodyKindProj)]
-#[derive(Debug)]
-enum ResponseBodyKind<B> {
-    Empty,
-    Wrap(#[pin] B),
+pin_project! {
+    #[project = ResponseBodyKindProj]
+    #[derive(Debug)]
+    enum ResponseBodyKind<B> {
+        Empty,
+        Wrap {
+            #[pin]
+            body: B
+        },
+    }
 }
 
 impl<B> ResponseBody<B> {
@@ -233,7 +251,7 @@ impl<B> ResponseBody<B> {
     }
 
     fn wrap(body: B) -> Self {
-        Self::new(ResponseBodyKind::Wrap(body))
+        Self::new(ResponseBodyKind::Wrap { body })
     }
 }
 
@@ -247,21 +265,21 @@ impl<B: http_body::Body> http_body::Body for ResponseBody<B> {
     ) -> Poll<Option<Result<http_body::Frame<Self::Data>, Self::Error>>> {
         match self.project().kind.project() {
             ResponseBodyKindProj::Empty => Poll::Ready(None),
-            ResponseBodyKindProj::Wrap(body) => body.poll_frame(cx),
+            ResponseBodyKindProj::Wrap { body } => body.poll_frame(cx),
         }
     }
 
     fn size_hint(&self) -> http_body::SizeHint {
         match &self.kind {
             ResponseBodyKind::Empty => http_body::SizeHint::with_exact(0),
-            ResponseBodyKind::Wrap(body) => body.size_hint(),
+            ResponseBodyKind::Wrap { body } => body.size_hint(),
         }
     }
 
     fn is_end_stream(&self) -> bool {
         match &self.kind {
             ResponseBodyKind::Empty => true,
-            ResponseBodyKind::Wrap(body) => body.is_end_stream(),
+            ResponseBodyKind::Wrap { body } => body.is_end_stream(),
         }
     }
 }

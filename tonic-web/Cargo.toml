@@ -20,11 +20,11 @@ bytes = "1"
 tokio-stream = { version = "0.1", default-features = false }
 http = "1"
 http-body = "1"
-pin-project = "1"
+pin-project-lite = "0.2.16"
 tonic = { version = "0.14.0", path = "../tonic", default-features = false }
 tower-service = "0.3"
 tower-layer = "0.3"
-tracing = "0.1"
+tracing = { version = "0.1", default-features = false }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }

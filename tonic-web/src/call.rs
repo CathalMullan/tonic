@@ -6,7 +6,7 @@ use base64::Engine as _;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use http::{header, HeaderMap, HeaderName, HeaderValue};
 use http_body::{Body, Frame, SizeHint};
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use tokio_stream::Stream;
 use tonic::Status;
 
@@ -56,18 +56,19 @@ pub(crate) enum Encoding {
     None,
 }
 
-/// HttpBody adapter for the grpc web based services.
-#[derive(Debug)]
-#[pin_project]
-pub struct GrpcWebCall<B> {
-    #[pin]
-    inner: B,
-    buf: BytesMut,
-    decoded: BytesMut,
-    direction: Direction,
-    encoding: Encoding,
-    client: bool,
-    trailers: Option<HeaderMap>,
+pin_project! {
+    /// HttpBody adapter for the grpc web based services.
+    #[derive(Debug)]
+    pub struct GrpcWebCall<B> {
+        #[pin]
+        inner: B,
+        buf: BytesMut,
+        decoded: BytesMut,
+        direction: Direction,
+        encoding: Encoding,
+        client: bool,
+        trailers: Option<HeaderMap>,
+    }
 }
 
 impl<B: Default> Default for GrpcWebCall<B> {

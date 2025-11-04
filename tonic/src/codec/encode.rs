@@ -6,29 +6,31 @@ use crate::Status;
 use bytes::{BufMut, Bytes, BytesMut};
 use http::HeaderMap;
 use http_body::{Body, Frame};
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use std::{
     pin::Pin,
     task::{ready, Context, Poll},
 };
 use tokio_stream::{adapters::Fuse, Stream, StreamExt};
 
-/// Combinator for efficient encoding of messages into reasonably sized buffers.
-/// EncodedBytes encodes ready messages from its delegate stream into a BytesMut,
-/// splitting off and yielding a buffer when either:
-///  * The delegate stream polls as not ready, or
-///  * The encoded buffer surpasses YIELD_THRESHOLD.
-#[pin_project(project = EncodedBytesProj)]
-#[derive(Debug)]
-struct EncodedBytes<T, U> {
-    #[pin]
-    source: Fuse<U>,
-    encoder: T,
-    compression_encoding: Option<CompressionEncoding>,
-    max_message_size: Option<usize>,
-    buf: BytesMut,
-    uncompression_buf: BytesMut,
-    error: Option<Status>,
+pin_project! {
+    /// Combinator for efficient encoding of messages into reasonably sized buffers.
+    /// EncodedBytes encodes ready messages from its delegate stream into a BytesMut,
+    /// splitting off and yielding a buffer when either:
+    ///  * The delegate stream polls as not ready, or
+    ///  * The encoded buffer surpasses YIELD_THRESHOLD.
+    #[project = EncodedBytesProj]
+    #[derive(Debug)]
+    struct EncodedBytes<T, U> {
+        #[pin]
+        source: Fuse<U>,
+        encoder: T,
+        compression_encoding: Option<CompressionEncoding>,
+        max_message_size: Option<usize>,
+        buf: BytesMut,
+        uncompression_buf: BytesMut,
+        error: Option<Status>,
+    }
 }
 
 impl<T: Encoder, U: Stream> EncodedBytes<T, U> {
@@ -211,13 +213,14 @@ enum Role {
     Server,
 }
 
-/// A specialized implementation of [Body] for encoding [Result<Bytes, Status>].
-#[pin_project]
-#[derive(Debug)]
-pub struct EncodeBody<T, U> {
-    #[pin]
-    inner: EncodedBytes<T, U>,
-    state: EncodeState,
+pin_project! {
+    /// A specialized implementation of [Body] for encoding [Result<Bytes, Status>].
+    #[derive(Debug)]
+    pub struct EncodeBody<T, U> {
+        #[pin]
+        inner: EncodedBytes<T, U>,
+        state: EncodeState,
+    }
 }
 
 #[derive(Debug)]

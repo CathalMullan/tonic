@@ -1,13 +1,13 @@
 #[cfg(feature = "_tls-any")]
-use std::future::Future;
+use std::{future::Future, pin::pin};
 use std::{
     io,
     ops::ControlFlow,
-    pin::{pin, Pin},
+    pin::Pin,
     task::{ready, Context, Poll},
 };
 
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use tokio::io::{AsyncRead, AsyncWrite};
 #[cfg(feature = "_tls-any")]
 use tokio::task::JoinSet;
@@ -22,15 +22,27 @@ use super::service::TlsAcceptor;
 #[cfg(feature = "_tls-any")]
 struct State<IO>(TlsAcceptor, JoinSet<Result<ServerIo<IO>, crate::BoxError>>);
 
-#[pin_project]
-pub(crate) struct ServerIoStream<S, IO, IE>
-where
-    S: Stream<Item = Result<IO, IE>>,
-{
-    #[pin]
-    inner: S,
-    #[cfg(feature = "_tls-any")]
-    state: Option<State<IO>>,
+#[cfg(feature = "_tls-any")]
+pin_project! {
+    pub(crate) struct ServerIoStream<S, IO, IE>
+    where
+        S: Stream<Item = Result<IO, IE>>,
+    {
+        #[pin]
+        inner: S,
+        state: Option<State<IO>>,
+    }
+}
+
+#[cfg(not(feature = "_tls-any"))]
+pin_project! {
+    pub(crate) struct ServerIoStream<S, IO, IE>
+    where
+        S: Stream<Item = Result<IO, IE>>,
+    {
+        #[pin]
+        inner: S,
+    }
 }
 
 impl<S, IO, IE> ServerIoStream<S, IO, IE>

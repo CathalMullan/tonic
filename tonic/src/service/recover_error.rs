@@ -8,7 +8,7 @@ use std::{
 };
 
 use http::Response;
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use tower_layer::Layer;
 use tower_service::Service;
 
@@ -69,11 +69,12 @@ where
     }
 }
 
-/// Response future for [`RecoverError`].
-#[pin_project]
-pub struct ResponseFuture<F> {
-    #[pin]
-    inner: F,
+pin_project! {
+    /// Response future for [`RecoverError`].
+    pub struct ResponseFuture<F> {
+        #[pin]
+        inner: F,
+    }
 }
 
 impl<F> fmt::Debug for ResponseFuture<F> {
@@ -107,11 +108,12 @@ where
     }
 }
 
-/// Response body for [`RecoverError`].
-#[pin_project]
-pub struct ResponseBody<B> {
-    #[pin]
-    inner: Option<B>,
+pin_project! {
+    /// Response body for [`RecoverError`].
+    pub struct ResponseBody<B> {
+        #[pin]
+        inner: Option<B>,
+    }
 }
 
 impl<B> fmt::Debug for ResponseBody<B> {

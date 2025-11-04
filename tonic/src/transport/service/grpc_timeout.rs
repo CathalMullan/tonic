@@ -1,6 +1,6 @@
 use crate::{metadata::GRPC_TIMEOUT_HEADER, TimeoutExpired};
 use http::{HeaderMap, HeaderValue, Request};
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use std::{
     future::Future,
     pin::Pin,
@@ -62,12 +62,13 @@ where
     }
 }
 
-#[pin_project]
-pub(crate) struct ResponseFuture<F> {
-    #[pin]
-    inner: F,
-    #[pin]
-    sleep: Option<Sleep>,
+pin_project! {
+    pub(crate) struct ResponseFuture<F> {
+        #[pin]
+        inner: F,
+        #[pin]
+        sleep: Option<Sleep>,
+    }
 }
 
 impl<F, Res, E> Future for ResponseFuture<F>

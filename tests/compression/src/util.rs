@@ -3,7 +3,7 @@ use bytes::{Buf, Bytes};
 use http_body::{Body as HttpBody, Frame};
 use http_body_util::BodyExt as _;
 use hyper_util::rt::TokioIo;
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use std::{
     pin::Pin,
     sync::{
@@ -34,12 +34,13 @@ macro_rules! parametrized_tests {
 
 pub(crate) use parametrized_tests;
 
-/// A body that tracks how many bytes passes through it
-#[pin_project]
-pub struct CountBytesBody<B> {
-    #[pin]
-    pub inner: B,
-    pub counter: Arc<AtomicUsize>,
+pin_project! {
+    /// A body that tracks how many bytes passes through it
+    pub struct CountBytesBody<B> {
+        #[pin]
+        pub inner: B,
+        pub counter: Arc<AtomicUsize>,
+    }
 }
 
 impl<B> HttpBody for CountBytesBody<B>
@@ -82,10 +83,11 @@ fn frame_data_length(frame: &http_body::Frame<Bytes>) -> usize {
     }
 }
 
-#[pin_project]
-struct ChannelBody<T> {
-    #[pin]
-    rx: tokio::sync::mpsc::Receiver<Frame<T>>,
+pin_project! {
+    struct ChannelBody<T> {
+        #[pin]
+        rx: tokio::sync::mpsc::Receiver<Frame<T>>,
+    }
 }
 
 impl<T> ChannelBody<T> {

@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::task::{ready, Context, Poll};
 
 use http::{header, HeaderMap, HeaderValue, Method, Request, Response, StatusCode, Version};
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use tonic::metadata::GRPC_CONTENT_TYPE;
 use tonic::{body::Body, server::NamedService};
 use tower_service::Service;
@@ -119,28 +119,31 @@ where
     }
 }
 
-/// Response future for the [`GrpcWebService`].
-#[pin_project]
-#[must_use = "futures do nothing unless polled"]
-pub struct ResponseFuture<F> {
-    #[pin]
-    case: Case<F>,
+pin_project! {
+    /// Response future for the [`GrpcWebService`].
+    #[must_use = "futures do nothing unless polled"]
+    pub struct ResponseFuture<F> {
+        #[pin]
+        case: Case<F>,
+    }
 }
 
-#[pin_project(project = CaseProj)]
-enum Case<F> {
-    GrpcWeb {
-        #[pin]
-        future: F,
-        accept: Encoding,
-    },
-    Other {
-        #[pin]
-        future: F,
-    },
-    ImmediateResponse {
-        res: Option<http::response::Parts>,
-    },
+pin_project! {
+    #[project = CaseProj]
+    enum Case<F> {
+        GrpcWeb {
+            #[pin]
+            future: F,
+            accept: Encoding,
+        },
+        Other {
+            #[pin]
+            future: F,
+        },
+        ImmediateResponse {
+            res: Option<http::response::Parts>,
+        },
+    }
 }
 
 impl<F> Case<F> {

@@ -51,7 +51,7 @@ use bytes::Bytes;
 use http::{Request, Response};
 use http_body_util::BodyExt;
 use hyper::{body::Incoming, service::Service as HyperService};
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use std::{
     fmt,
     future::{self, Future},
@@ -1059,11 +1059,12 @@ where
     }
 }
 
-#[pin_project]
-struct SvcFuture<F> {
-    #[pin]
-    inner: F,
-    span: tracing::Span,
+pin_project! {
+    struct SvcFuture<F> {
+        #[pin]
+        inner: F,
+        span: tracing::Span,
+    }
 }
 
 impl<F, E, ResBody> Future for SvcFuture<F>
@@ -1145,13 +1146,14 @@ where
     }
 }
 
-// From `futures-util` crate, borrowed since this is the only dependency tonic requires.
-// LICENSE: MIT or Apache-2.0
-// A future which only yields `Poll::Ready` once, and thereafter yields `Poll::Pending`.
-#[pin_project]
-struct Fuse<F> {
-    #[pin]
-    inner: Option<F>,
+pin_project! {
+    // From `futures-util` crate, borrowed since this is the only dependency tonic requires.
+    // LICENSE: MIT or Apache-2.0
+    // A future which only yields `Poll::Ready` once, and thereafter yields `Poll::Pending`.
+    struct Fuse<F> {
+        #[pin]
+        inner: Option<F>,
+    }
 }
 
 impl<F> Future for Fuse<F>

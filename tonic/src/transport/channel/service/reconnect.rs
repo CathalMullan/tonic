@@ -1,4 +1,4 @@
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 use std::fmt;
 use std::{
     future::Future,
@@ -170,31 +170,39 @@ where
     }
 }
 
-/// Future that resolves to the response or failure to connect.
-#[pin_project]
-#[derive(Debug)]
-pub(crate) struct ResponseFuture<F> {
-    #[pin]
-    inner: Inner<F>,
+pin_project! {
+    /// Future that resolves to the response or failure to connect.
+    #[derive(Debug)]
+    pub(crate) struct ResponseFuture<F> {
+        #[pin]
+        inner: Inner<F>,
+    }
 }
 
-#[pin_project(project = InnerProj)]
-#[derive(Debug)]
-enum Inner<F> {
-    Future(#[pin] F),
-    Error(Option<crate::BoxError>),
+pin_project! {
+    #[project = InnerProj]
+    #[derive(Debug)]
+    enum Inner<F> {
+        Future {
+            #[pin]
+            future: F
+        },
+        Error {
+            error: Option<crate::BoxError>
+        },
+    }
 }
 
 impl<F> ResponseFuture<F> {
-    pub(crate) fn new(inner: F) -> Self {
+    pub(crate) fn new(future: F) -> Self {
         ResponseFuture {
-            inner: Inner::Future(inner),
+            inner: Inner::Future { future },
         }
     }
 
     pub(crate) fn error(error: crate::BoxError) -> Self {
         ResponseFuture {
-            inner: Inner::Error(Some(error)),
+            inner: Inner::Error { error: Some(error) },
         }
     }
 }
@@ -210,10 +218,10 @@ where
         //self.project().inner.poll(cx).map_err(Into::into)
         let me = self.project();
         match me.inner.project() {
-            InnerProj::Future(fut) => fut.poll(cx).map_err(Into::into),
-            InnerProj::Error(e) => {
-                let e = e.take().expect("Polled after ready.");
-                Poll::Ready(Err(e))
+            InnerProj::Future { future } => future.poll(cx).map_err(Into::into),
+            InnerProj::Error { error } => {
+                let error = error.take().expect("Polled after ready.");
+                Poll::Ready(Err(error))
             }
         }
     }
