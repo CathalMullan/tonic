@@ -18,6 +18,7 @@ pub struct CodeGenBuilder {
     build_transport: bool,
     disable_comments: HashSet<String>,
     use_arc_self: bool,
+    use_rpit_futures: bool,
     generate_default_stubs: bool,
 }
 
@@ -70,6 +71,17 @@ impl CodeGenBuilder {
         self
     }
 
+    /// Enable or disable use of return position impl trait (RPIT) for trait methods.
+    ///
+    /// When enabled, generated traits will use `-> impl Future<Output = ...> + Send`
+    /// instead of `#[async_trait]`.
+    ///
+    /// Defaults to `false`.
+    pub fn use_rpit_futures(&mut self, enable: bool) -> &mut Self {
+        self.use_rpit_futures = enable;
+        self
+    }
+
     /// Enable or disable returning automatic unimplemented gRPC error code for generated traits.
     pub fn generate_default_stubs(&mut self, generate_default_stubs: bool) -> &mut Self {
         self.generate_default_stubs = generate_default_stubs;
@@ -105,6 +117,7 @@ impl CodeGenBuilder {
             &self.attributes,
             &self.disable_comments,
             self.use_arc_self,
+            self.use_rpit_futures,
             self.generate_default_stubs,
         )
     }
@@ -119,6 +132,7 @@ impl Default for CodeGenBuilder {
             build_transport: true,
             disable_comments: HashSet::default(),
             use_arc_self: false,
+            use_rpit_futures: false,
             generate_default_stubs: false,
         }
     }

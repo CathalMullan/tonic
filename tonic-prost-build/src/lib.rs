@@ -81,6 +81,7 @@ pub fn configure() -> Builder {
         emit_rerun_if_changed: std::env::var_os("CARGO").is_some(),
         disable_comments: HashSet::default(),
         use_arc_self: false,
+        use_rpit_futures: false,
         generate_default_stubs: false,
         codec_path: "tonic_prost::ProstCodec".to_string(),
         skip_debug: HashSet::default(),
@@ -307,6 +308,7 @@ struct ServiceGenerator {
     client_attributes: Attributes,
     server_attributes: Attributes,
     use_arc_self: bool,
+    use_rpit_futures: bool,
     generate_default_stubs: bool,
     proto_path: String,
     compile_well_known_types: bool,
@@ -324,6 +326,7 @@ impl ServiceGenerator {
         client_attributes: Attributes,
         server_attributes: Attributes,
         use_arc_self: bool,
+        use_rpit_futures: bool,
         generate_default_stubs: bool,
         proto_path: String,
         compile_well_known_types: bool,
@@ -337,6 +340,7 @@ impl ServiceGenerator {
             client_attributes,
             server_attributes,
             use_arc_self,
+            use_rpit_futures,
             generate_default_stubs,
             proto_path,
             compile_well_known_types,
@@ -357,6 +361,7 @@ impl prost_build::ServiceGenerator for ServiceGenerator {
             .compile_well_known_types(self.compile_well_known_types)
             .disable_comments(self.disable_comments.clone())
             .use_arc_self(self.use_arc_self)
+            .use_rpit_futures(self.use_rpit_futures)
             .generate_default_stubs(self.generate_default_stubs);
 
         let mut tokens = TokenStream::new();
@@ -405,6 +410,7 @@ pub struct Builder {
     emit_rerun_if_changed: bool,
     disable_comments: HashSet<String>,
     use_arc_self: bool,
+    use_rpit_futures: bool,
     generate_default_stubs: bool,
     codec_path: String,
     skip_debug: HashSet<String>,
@@ -661,6 +667,17 @@ impl Builder {
         self
     }
 
+    /// Enable or disable use of return position impl trait (RPIT) for trait methods.
+    ///
+    /// When enabled, generated traits will use `-> impl Future<Output = ...> + Send`
+    /// instead of `#[async_trait]`.
+    ///
+    /// Defaults to `false`.
+    pub fn use_rpit_futures(mut self, enable: bool) -> Self {
+        self.use_rpit_futures = enable;
+        self
+    }
+
     /// Generate the default stubs for gRPC services. This code will be generated
     /// inside of your service module. Ex: `pub mod helloworld { ... }`
     pub fn generate_default_stubs(mut self, enable: bool) -> Self {
@@ -785,6 +802,7 @@ impl Builder {
                 self.client_attributes,
                 self.server_attributes,
                 self.use_arc_self,
+                self.use_rpit_futures,
                 self.generate_default_stubs,
                 self.proto_path,
                 self.compile_well_known_types,
@@ -887,6 +905,7 @@ impl Builder {
                 self.client_attributes,
                 self.server_attributes,
                 self.use_arc_self,
+                self.use_rpit_futures,
                 self.generate_default_stubs,
                 self.proto_path,
                 self.compile_well_known_types,
@@ -912,6 +931,7 @@ impl Builder {
             self.client_attributes,
             self.server_attributes,
             self.use_arc_self,
+            self.use_rpit_futures,
             self.generate_default_stubs,
             self.proto_path,
             self.compile_well_known_types,

@@ -417,6 +417,7 @@ pub struct Builder {
     build_server: bool,
     build_client: bool,
     build_transport: bool,
+    use_rpit_futures: bool,
 
     out_dir: Option<PathBuf>,
 }
@@ -427,6 +428,7 @@ impl Default for Builder {
             build_server: true,
             build_client: true,
             build_transport: true,
+            use_rpit_futures: false,
             out_dir: None,
         }
     }
@@ -460,6 +462,17 @@ impl Builder {
     /// When the `transport` feature is disabled this does nothing.
     pub fn build_transport(mut self, enable: bool) -> Self {
         self.build_transport = enable;
+        self
+    }
+
+    /// Enable or disable use of return position impl trait (RPIT) for trait methods.
+    ///
+    /// When enabled, generated traits will use `-> impl Future<Output = ...> + Send`
+    /// instead of `#[async_trait]`.
+    ///
+    /// Defaults to `false`.
+    pub fn use_rpit_futures(mut self, enable: bool) -> Self {
+        self.use_rpit_futures = enable;
         self
     }
 
